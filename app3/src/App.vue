@@ -198,12 +198,4 @@ function identify() {
   background-repeat: no-repeat;
   overflow: auto;
 }
-#revealImg {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  background-size: cover;
-  background-position: center;
-  z-index: 10;
-}
 </style>

@@ -21,9 +21,5 @@ import Layout from './components/Layout.vue'
   grid-template-rows: 1fr 1fr;
 }
 
-.content {
-  width: 100px;
-  height: 200px;
-  position: relative;
-}
+
 </style>
