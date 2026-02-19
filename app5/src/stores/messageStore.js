@@ -9,6 +9,7 @@ export const useMessageStore = defineStore('messageStore', () => {
   function add(msg) {
     if (msg instanceof Message) {
       messages.value.push(msg)
+      localStorage.setItem('messages', JSON.stringify(messages.value))
     }
   }
   function redact(messageid, username) {
