@@ -64,4 +64,23 @@ const userStore = useUserStore()
 .hidden {
   visibility: hidden;
 }
+
+.view {
+  position: relative;
+}
+.view:after {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  content: '';
+  background-image: url(/starfish.png);
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: contain;
+  filter: grayscale(100%);
+  opacity: 0.05;
+  z-index: -1;
+}
 </style>
