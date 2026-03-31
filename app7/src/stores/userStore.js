@@ -5,47 +5,88 @@ import Users from '@/modules/User'
 export const useUserStore = defineStore('userStore', () => {
   const users = ref(JSON.parse(localStorage.getItem('users')) || [...Users])
 
-  const currentUserId = ref(JSON.parse(localStorage.getItem('currentUserId')) || null)
+  const currentUser = ref(JSON.parse(localStorage.getItem('currentUser')) || null)
+
   const friendChat = ref(null)
 
-  const currentUser = computed(() => users.value.find((u) => u.id === currentUserId.value))
   const selectedFriend = computed(() => users.value.find((u) => u.id === friendChat.value))
-  const loggedIn = computed(() => currentUser.value)
+  const loggedIn = computed(() => !!currentUser.value)
 
-  function login(username, password) {
-    const user = users.value.find((u) => u.username === username && u.password === password)
+  const URL = 'https://stingray-app-u3bsh.ondigitalocean.app'
 
-    if (!user) throw new Error('Invalid credentials')
+  async function login(username, password) {
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password }),
+    }
 
-    currentUserId.value = user.id
-    localStorage.setItem('currentUserId', JSON.stringify(user.id))
+    try {
+      const res = await fetch(`${URL}/user/login`, options)
+
+      if (!res.ok) {
+        throw new Error('Invalid username or password')
+      }
+
+      const user = await res.json()
+
+      currentUser.value = user
+      localStorage.setItem('currentUser', JSON.stringify(user))
+
+      return user
+    } catch (err) {
+      throw err
+    }
   }
 
-  function createUser(username, password) {
-    const existingUser = users.value.find((u) => u.username === username)
-    if (existingUser) {
-      throw new Error('Username already exists')
-    }
-    const newUser = {
-      id: Date.now(),
-      username,
-      password,
-      friends: [],
-      friendRequests: [],
-      outgoingRequests: [],
+  async function createUser(firstName, lastName, username, email, password) {
+    const options = {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        firstName,
+        lastName,
+        username,
+        email,
+        password,
+      }),
     }
 
-    users.value.push(newUser)
-    localStorage.setItem('users', JSON.stringify(users.value))
-    login(username, password)
+    try {
+      const res = await fetch(`${URL}/user`, options)
+
+      console.log(`Res status : ${res.status}`)
+
+      if (!res.ok) {
+        if (res.status === 409) {
+          throw new Error('User already Exists')
+        }
+
+        const text = await res.text()
+        const result = text ? JSON.parse(text) : null
+        throw new Error(result?.message || 'Something went wrong')
+      }
+
+      const text = await res.text()
+      const result = text ? JSON.parse(text) : null
+
+      return result
+    } catch (err) {
+      throw err
+    }
   }
 
   function selectFriend(friendId) {
     friendChat.value = friendId
   }
+
   function logout() {
-    currentUserId.value = null
-    localStorage.removeItem('currentUserId')
+    currentUser.value = null
+    localStorage.removeItem('currentUser')
   }
 
   return {

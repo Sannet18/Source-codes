@@ -1,5 +1,5 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
@@ -12,17 +12,26 @@ const route = useRoute()
 const username = ref('')
 const password = ref('')
 
+const loggedInMessage = ref('')
+
 const errorMessage = ref('')
-function login() {
+async function login() {
+  errorMessage.value = ''
   try {
-    userStore.login(username.value, password.value)
+    await userStore.login(username.value, password.value)
     router.push('/home')
   } catch (err) {
-    errorMessage.value = '*Username or Password incorrect'
+    errorMessage.value = '*Invalid Username or Password'
   }
 }
 
 const showPassword = ref(false)
+
+onMounted(() => {
+  if (route.query.created === 'true') {
+    loggedInMessage.value = 'Account creation successful.'
+  }
+})
 </script>
 
 <template>
@@ -30,6 +39,7 @@ const showPassword = ref(false)
   <div class="login-view view">
     <div class="login-content">
       <div class="login-form">
+        <span class="success-message">{{ loggedInMessage }}</span>
         <h3>Sign In</h3>
         <div>
           <div class="form-item">
@@ -58,6 +68,10 @@ const showPassword = ref(false)
 </template>
 
 <style scoped>
+.success-message {
+  color: green;
+  text-align: center;
+}
 .error-message {
   color: red;
 }

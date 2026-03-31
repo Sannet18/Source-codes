@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
+import { defineProps } from 'vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -21,6 +22,8 @@ const signOut = () => {
 const cancelSignOut = () => {
   showConfirm.value = false
 }
+
+
 </script>
 
 <template>

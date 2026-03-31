@@ -49,25 +49,21 @@ const router = createRouter({
   routes,
 })
 
-router.beforeEach(async (to, from, next) => {
+router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
+  const publicPages = ['/signIn', '/createAccount', '/start']
 
   if (to.matched.length === 0) {
-    next(false)
-    return
+    return next(false)
   }
-  const pages = ['/signIn', '/createAccount', '/start']
 
-  if (userStore.loggedIn && pages.includes(to.path)) {
-    const confirmLeave = window.confirm('You are already logged in. Do you want to log out?')
+  // this to send user to sign in if not loggedin
+  if (!userStore.loggedIn && !publicPages.includes(to.path)) {
+    return next('/signIn')
+  }
 
-    if (confirmLeave) {
-      userStore.logout()
-      next()
-    } else {
-      next(false)
-    }
-    return
+  if (userStore.loggedIn && ['/signIn', '/createAccount'].includes(to.path)) {
+    return next('/home')
   }
 
   next()

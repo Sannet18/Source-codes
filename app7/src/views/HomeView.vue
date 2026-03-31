@@ -7,8 +7,8 @@ console.log(userStore.users)
 </script>
 
 <template>
-  <!-- Create conditions to show Sign out on the Nav bar since the user will be signed in at this time. -->
-  <NavBar />
+  <!-- gotta create conditions to show Sign out on the Nav bar since the user will be signed in at this time. -->
+  <NavBar :username= userStore.username " />
   <div class="home-view">
     <RouterView class="sidebar" name="sidebar"></RouterView>
     <RouterView class="main" name="main"></RouterView>
@@ -16,7 +16,6 @@ console.log(userStore.users)
 </template>
 
 <style scoped>
-
 .home-view {
   display: flex;
   height: calc(100vh - 60px);
@@ -30,7 +29,6 @@ console.log(userStore.users)
 .sidebar {
   flex: 0 0 200px;
   background-color: #222831;
-  overflow-y: auto;
   color: white;
   border-radius: 15px;
 }

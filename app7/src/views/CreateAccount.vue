@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/userStore'
 import NavBar from './NavBar.vue'
+import { watch } from 'vue'
 
 const userStore = useUserStore()
 const router = useRouter()
@@ -10,33 +11,40 @@ const route = useRoute()
 
 const username = ref('')
 const password = ref('')
+const firstname = ref('')
+const lastname = ref('')
+const email = ref('')
 
-// Validation for username
-const usernameRules = computed(() => ({
-  length: username.value.length >= 5,
-  startsLetter: /^[A-Za-z]/.test(username.value),
-  lettersNumbers: /^[A-Za-z0-9]*$/.test(username.value),
-}))
+const apiErrors = ref([])
 
-// Validation for password
-const passwordRules = computed(() => ({
-  length: password.value.length >= 8,
-  uppercase: /[A-Z]/.test(password.value),
-  lowercase: /[a-z]/.test(password.value),
-  number: /\d/.test(password.value),
-  special: /[^A-Za-z0-9]/.test(password.value),
-}))
+async function createAccount() {
+  if (!allValid.value) return
 
-const usernameValid = computed(() => Object.values(usernameRules.value).every(Boolean))
-const passwordValid = computed(() => Object.values(passwordRules.value).every(Boolean))
-const allValid = computed(() => usernameValid.value && passwordValid.value)
+  apiErrors.value = []
 
-function createAccount() {
-  if (allValid.value) {
-    userStore.createUser(username.value, password.value)
-    router.push('/home')
+  try {
+    await userStore.createUser(
+      firstname.value,
+      lastname.value,
+      username.value,
+      email.value,
+      password.value,
+    )
+
+    router.push({ name: 'signIn', query: { created: 'true' } })
+  } catch (err) {
+    //Got this side online
+    let msg = err.message || ''
+    if (msg.startsWith('User validation failed: ')) {
+      msg = msg.replace('User validation failed: ', '')
+    }
+    apiErrors.value = msg.split(/,\s*/).map((e) => e.replace(/Path `.*?` is /, ''))
   }
 }
+const allValid = computed(() => apiErrors.value.length === 0)
+watch([firstname, lastname, username, email, password], () => {
+  apiErrors.value = []
+})
 
 const showPassword = ref(false)
 </script>
@@ -49,10 +57,21 @@ const showPassword = ref(false)
         <h3>Create Account</h3>
         <div>
           <div class="form-item">
+            <label for="firstnameInput">First Name</label>
+            <input id="firstnameInput" v-model="firstname" />
+          </div>
+          <div class="form-item">
+            <label for="lastnameInput">Last Name</label>
+            <input id="lastnameInput" v-model="lastname" />
+          </div>
+          <div class="form-item">
             <label for="usernameInput">Username</label>
             <input id="usernameInput" v-model="username" />
           </div>
-
+          <div class="form-item">
+            <label for="emailInput">Email</label>
+            <input placeholder="1234@gmail.com" id="emailInput" type="email" v-model="email" />
+          </div>
           <div class="form-item">
             <label for="passwordInput">Password</label>
             <label class="switch align-right">
@@ -63,34 +82,17 @@ const showPassword = ref(false)
               :type="showPassword ? 'text' : 'password'"
               id="passwordInput"
               v-model="password"
+              @keyup.enter="createAccount"
             />
           </div>
         </div>
 
         <button :disabled="!allValid" @click="createAccount">Create Account</button>
       </div>
-
-      <!-- Validation messages -->
-      <div class="error-messages" :class="{ 'no-width': allValid }">
-        <div v-if="!usernameValid">
-          <span>Username</span>
+      <div class="error-messages" :class="{ 'no-width': apiErrors.length === 0 }">
+        <div v-if="apiErrors.length">
           <ul>
-            <li :class="{ valid: usernameRules.length }">Must have at least 5 characters</li>
-            <li :class="{ valid: usernameRules.startsLetter }">Must begin with a letter</li>
-            <li :class="{ valid: usernameRules.lettersNumbers }">
-              Can only contain letters and numbers
-            </li>
-          </ul>
-        </div>
-
-        <div v-if="!passwordValid">
-          <span>Password</span>
-          <ul>
-            <li :class="{ valid: passwordRules.length }">Must have at least 8 characters</li>
-            <li :class="{ valid: passwordRules.uppercase }">Must have 1 uppercase character</li>
-            <li :class="{ valid: passwordRules.lowercase }">Must have 1 lowercase character</li>
-            <li :class="{ valid: passwordRules.number }">Must have 1 number</li>
-            <li :class="{ valid: passwordRules.special }">Must have 1 special character</li>
+            <li v-for="(err, index) in apiErrors" :key="index">{{ err }}</li>
           </ul>
         </div>
       </div>
@@ -102,7 +104,7 @@ const showPassword = ref(false)
 .login-form > button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
-  transform: none; 
+  transform: none;
 }
 li::marker {
   display: list-item;
@@ -171,10 +173,6 @@ input:checked + .slider {
   display: inline-block;
   min-width: max-content;
   white-space: nowrap;
-}
-
-.valid {
-  color: green;
 }
 
 .login-form > button {
