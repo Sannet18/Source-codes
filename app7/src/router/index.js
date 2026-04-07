@@ -7,6 +7,7 @@ import Mainbox from '@/components/Mainbox.vue'
 import SignIn from '@/views/SignIn.vue'
 import Messenger from '@/components/Messenger.vue'
 import { useUserStore } from '@/stores/userStore'
+import ProfileView from '@/views/ProfileView.vue'
 
 const routes = [
   { path: '/', redirect: '/start' },
@@ -41,6 +42,10 @@ const routes = [
         },
       },
     ],
+  },
+  {
+    path: '/profile',
+    component: ProfileView,
   },
 ]
 

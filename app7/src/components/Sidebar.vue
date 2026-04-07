@@ -1,136 +1,154 @@
 <script setup>
-// Wednesday
-// Dont forget about these onees 
-// Display active friends
-// Display friend requests where I have accept and decline buttons next to them(check for not a user, adding yourself, if request has already been sent
-// Check if username exists before friend requests can be sent
-
 import { ref, computed } from 'vue'
 import { useUserStore } from '@/stores/userStore'
-
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
+import { onMounted } from 'vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 
-
 const search = ref('')
 const error = ref('')
 
-
 const currentUser = computed(() => userStore.currentUser)
+
+const requests = computed(() => userStore.friendRequests || [])
 
 const friends = computed(() => currentUser.value?.friends || [])
 
+const incomingRequests = computed(() =>
+  (requests.value || []).filter(
+    (req) => req.receiver_id === currentUser.value?.id && req.status === 'pending',
+  ),
+)
 
-const requests = computed(() => currentUser.value?.friendRequests || [])
+const outgoingRequests = computed(() =>
+  (requests.value || []).filter(
+    (req) => req.sender_id === currentUser.value?.id && req.status === 'pending',
+  ),
+)
+function getUsername(id) {
+  return userStore.userMap[id]?.username || 'Loading...'
+}
 
-function addFriend() {
+async function addFriend() {
+  console.log('Current user:', userStore.currentUser)
+  console.log('Current user username:', userStore.currentUser?.username)
   error.value = ''
 
-  const user = userStore.users.find((u) => u.username === search.value)
-
-  if (!user) {
-    error.value = '*Enter valid username'
+  if (!search.value.trim()) {
+    error.value = '*Please enter a username'
     return
   }
 
-  if (user.id === currentUser.value.id) {
+  if (search.value === currentUser.value?.user.username) {
     error.value = '*You cannot add yourself'
     return
   }
 
-  if (currentUser.value.friends.includes(user.id)) {
-    error.value = '*Already friends'
-    return
+  try {
+    const targetUserId = userStore.findUserIdByUsername(search.value)
+
+    if (!targetUserId) {
+      error.value = '*Enter valid username'
+      return
+    }
+
+    await userStore.sendRequest(targetUserId)
+    search.value = ''
+    await userStore.getFriendRequests()
+  } catch (err) {
+    error.value = err.message
   }
-
-  if (currentUser.value.outgoingRequests.includes(user.id)) {
-    error.value = '*Request already sent'
-    return
-  }
-
-  currentUser.value.outgoingRequests.push(user.id)
-  user.friendRequests.push(currentUser.value.id)
-
-  localStorage.setItem('users', JSON.stringify(userStore.users))
-
-  search.value = ''
 }
 
-function acceptRequest(friendId) {
-  const friend = userStore.users.find((u) => u.id === friendId)
-
-
-  currentUser.value.friends.push(friendId)
-  friend.friends.push(currentUser.value.id)
-
-  currentUser.value.friendRequests = currentUser.value.friendRequests.filter(
-    (id) => id !== friendId,
-  )
-
-  friend.outgoingRequests = friend.outgoingRequests.filter((id) => id !== currentUser.value.id)
-
-  localStorage.setItem('users', JSON.stringify(userStore.users))
+async function acceptRequest(requestId) {
+  await userStore.requestDecision(requestId, true)
+  await userStore.getFriendRequests()
 }
 
-
-function declineRequest(friendId) {
-  const friend = userStore.users.find((u) => u.id === friendId)
-
-  currentUser.value.friendRequests = currentUser.value.friendRequests.filter(
-    (id) => id !== friendId,
-  )
-
-  friend.outgoingRequests = friend.outgoingRequests.filter((id) => id !== currentUser.value.id)
-
-  localStorage.setItem('users', JSON.stringify(userStore.users))
+async function declineRequest(requestId) {
+  await userStore.requestDecision(requestId, false)
+  await userStore.getFriendRequests()
 }
-
-console.log(currentUser.value)
-
 function chat(friendId) {
   const friend = userStore.users.find((user) => user.id === friendId)
   if (!friend) return
 
   router.push(`/home/chat/${friend.username}`)
 }
+
+onMounted(async () => {
+  try {
+    await userStore.getFriendRequests()
+  } catch (err) {
+    console.error('Failed to fetch friend requests:', err)
+    error.value = err.message
+  }
+})
 </script>
 
 <template>
   <div class="side-bar">
-    <!-- don't forget the v-for should for this side(friends)-->
-    <div class="friends-list">
-      <fieldset>
-        <h3>Friends</h3>
-        <div v-for="friendId in friends" :key="friendId">
-          <button @click="chat(friendId)" class="friend">
-            {{ userStore.users.find((user) => user.id === friendId)?.username }}
-          </button>
-        </div>
-      </fieldset>
-    </div>
-    <div class="friend-requests">
-      <!-- A v-for should go here to list requests -->
-      <fieldset>
-        <h3>Friend Requests</h3>
-        <div v-for="friendId in requests" :key="friendId">
-          {{ userStore.users.find((user) => user.id === friendId)?.username }} :
-          <button @click="acceptRequest(friendId)">Accept</button
-          ><button @click="declineRequest(friendId)">Decline</button>
-        </div>
-      </fieldset>
-    </div>
     <fieldset>
-      <div class="add-friend"><h3>Add Friend</h3></div>
-      <label for="search" class="search"></label>
-      <!-- Add v-model for the input field -->
-      <!-- Add condition to check if username exists to send request -->
+      <div class="add-friend">
+        <h3>Add Friend</h3>
+      </div>
+
       <input id="searchInput" v-model="search" placeholder="Enter Username" />
-      <span v-if="error" style="color: red" id="error-msg"> {{ error }}</span
+
+      <span v-if="error" style="color: red" id="error-msg">
+        {{ error }}
+      </span>
+
       <br />
       <button @click="addFriend">Add friend</button>
     </fieldset>
+    <div class="friends-list">
+      <fieldset>
+        <h3>Friends</h3>
+
+        <div v-if="friends.length === 0">No friends yet</div>
+
+        <div v-else>
+          <div v-for="friendId in friends" :key="friendId">
+            <button @click="chat(friendId)" class="friend">
+              {{ getUsername(friendId) }}
+            </button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="friend-requests">
+      <fieldset>
+        <h3>Friend Requests</h3>
+
+        <div v-if="incomingRequests.length === 0">No friend requests</div>
+
+        <div v-else>
+          <div v-for="req in incomingRequests" :key="req.id">
+            {{ getUsername(req.sender_id) }} :
+            <button @click="acceptRequest(req.id)">Accept</button>
+            <button @click="declineRequest(req.id)">Decline</button>
+          </div>
+        </div>
+      </fieldset>
+    </div>
+
+    <div class="outgoing-requests">
+      <fieldset>
+        <h3>Sent Requests</h3>
+
+        <div v-if="outgoingRequests.length === 0">No outgoing requests</div>
+
+        <div v-else>
+          <div v-for="req in outgoingRequests" :key="req.id">
+            {{ getUsername(req.receiver_id) }} <span>(Pending)</span>
+          </div>
+        </div>
+      </fieldset>
+    </div>
   </div>
 </template>
 
@@ -142,17 +160,18 @@ function chat(friendId) {
   border-radius: 8px;
   border: 1px solid #ccc;
 }
+
 #error-msg {
   font-size: 0.78rem;
   margin-bottom: 6px;
 }
+
 .friend-requests button {
   width: 65px;
   height: 30px;
-  text-align: center;
-  justify-content: center;
   margin-left: 4px;
 }
+
 button {
   width: 100px;
   height: 35px;
@@ -165,8 +184,8 @@ button {
     box-shadow 0.2s ease;
   background-color: #f2f2f2;
   margin-bottom: 8px;
-  display: inline-block;
 }
+
 .friend:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
@@ -175,21 +194,23 @@ button {
 .friend:active {
   transform: translateY(0);
 }
+
 fieldset {
-  -webkit-border-radius: 10px;
+  border-radius: 10px;
 }
+
 .friends-list,
 .friend-requests,
+.outgoing-requests,
 .add-friend {
-  overflow: hidden;
   overflow-y: auto;
   text-align: center;
 }
+
 .side-bar {
   padding: 20px;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  justify-content: space-between;
 }
 </style>
