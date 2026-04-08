@@ -1,52 +1,32 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
-import Users from '@/modules/User'
 import { getToken, removeToken, setToken } from '../../util/auth'
 
 export const useUserStore = defineStore('userStore', () => {
-  const users = ref(JSON.parse(localStorage.getItem('users')) || [...Users])
-
   const currentUser = ref(JSON.parse(localStorage.getItem('currentUser')) || null)
-  if (currentUser.value?.authToken) {
-    setToken(currentUser.value.authToken)
-  }
-  const friendChat = ref(null)
-
-  const selectedFriend = computed(() => users.value.find((u) => u.id === friendChat.value))
-  const loggedIn = computed(() => !!currentUser.value)
   const friendRequests = ref([])
+  const friends = ref([])
+  const selectedFriend = ref(null)
+
+  const loggedIn = computed(() => !!currentUser.value)
 
   const URL = 'https://stingray-app-u3bsh.ondigitalocean.app'
 
-  console.log(getToken())
   async function login(username, password) {
     const options = {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
     }
 
     try {
       const res = await fetch(`${URL}/user/login`, options)
-
-      if (!res.ok) {
-        throw new Error('Invalid username or password')
-      }
+      if (!res.ok) throw new Error('Invalid username or password')
 
       const user = await res.json()
-
-      console.log('User from server:', user)
-      console.log('Token from server:', user.token)
-
       setToken(user.authToken)
-
       currentUser.value = user
       localStorage.setItem('currentUser', JSON.stringify(user))
-
-      console.log('Token after login:', getToken())
-
       return user
     } catch (err) {
       throw err
@@ -56,41 +36,26 @@ export const useUserStore = defineStore('userStore', () => {
   async function createUser(firstName, lastName, username, email, password) {
     const options = {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        firstName,
-        lastName,
-        username,
-        email,
-        password,
-      }),
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ firstName, lastName, username, email, password }),
     }
 
     try {
       const res = await fetch(`${URL}/user`, options)
-
-      console.log(`Res status : ${res.status}`)
-
       if (!res.ok) {
-        if (res.status === 409) {
-          throw new Error('User already Exists')
-        }
-
+        if (res.status === 409) throw new Error('User already exists')
         const text = await res.text()
         const result = text ? JSON.parse(text) : null
         throw new Error(result?.message || 'Something went wrong')
       }
 
       const text = await res.text()
-      const result = text ? JSON.parse(text) : null
-
-      return result
+      return text ? JSON.parse(text) : null
     } catch (err) {
       throw err
     }
   }
+
   async function getUser() {
     const options = {
       method: 'GET',
@@ -102,44 +67,39 @@ export const useUserStore = defineStore('userStore', () => {
 
     try {
       const res = await fetch(`${URL}/user`, options)
-      if (!res.ok) {
-        throw new Error('Failed to fetch user')
-      }
+      if (!res.ok) throw new Error('Failed to fetch user')
 
       const user = await res.json()
+      console.log('getUser response:', user)
       currentUser.value = user
+      localStorage.setItem('currentUser', JSON.stringify(user))
       return user
     } catch (err) {
       throw err
     }
   }
 
-  // got this online
-  const userMap = ref({})
-  async function getUserById(id) {
-    if (userMap.value[id]) return userMap.value[id]
-
-    const res = await fetch(`${URL}/user/${id}`, {
+  async function findUsers(username) {
+    const options = {
+      method: 'GET',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${getToken()}`,
       },
-    })
+    }
 
-    if (!res.ok) throw new Error('Failed to fetch user')
+    try {
+      const res = await fetch(`${URL}/users?search=${username}`, options)
+      if (!res.ok) throw new Error('Failed to search users')
 
-    const user = await res.json()
-    userMap.value[id] = user
-
-    return user
+      const data = await res.json()
+      return data.users
+    } catch (err) {
+      throw err
+    }
   }
 
   async function sendRequest(userId) {
-    const token = getToken()
-
-    if (!token) {
-      throw new Error('Not authenticated. Please log in first.')
-    }
     const options = {
       method: 'POST',
       headers: {
@@ -147,24 +107,19 @@ export const useUserStore = defineStore('userStore', () => {
         Authorization: `Bearer ${getToken()}`,
       },
     }
+
     try {
       const res = await fetch(`${URL}/friend-request/${userId}`, options)
+      if (!res.ok) throw new Error('Failed to send friend request')
 
-      if (!res.ok) {
-        throw new Error('Failed to send friend request')
-      }
-      return await res.json()
+      const text = await res.text()
+      return text ? JSON.parse(text) : null
     } catch (err) {
       throw err
     }
   }
 
   async function requestDecision(requestId, accept) {
-    const token = getToken()
-
-    if (!token) {
-      throw new Error('Not authenticated. Please log in first.')
-    }
     const options = {
       method: 'PATCH',
       headers: {
@@ -172,24 +127,18 @@ export const useUserStore = defineStore('userStore', () => {
         Authorization: `Bearer ${getToken()}`,
       },
     }
+
     try {
       const res = await fetch(`${URL}/friend-request/${requestId}?accept=${accept}`, options)
+      if (!res.ok) throw new Error('Failed to accept/deny request')
 
-      if (!res.ok) {
-        throw new Error('Failed to accept/deny request')
-      }
-      return await res.json()
+      const text = await res.text()
+      return text ? JSON.parse(text) : null
     } catch (err) {
       throw err
     }
   }
-
   async function getFriendRequests() {
-    const token = getToken()
-
-    if (!token) {
-      throw new Error('Not authenticated. Please log in first.')
-    }
     const options = {
       method: 'GET',
       headers: {
@@ -200,35 +149,27 @@ export const useUserStore = defineStore('userStore', () => {
 
     try {
       const res = await fetch(`${URL}/friend-requests`, options)
+      if (!res.ok) throw new Error('Failed to fetch friend requests')
 
-      if (!res.ok) {
-        throw new Error('Failed to fetch friends')
-      }
-
-      if (res.status === 401) {
-        throw new Error('Unauthorized: Please log in again')
-      }
-
-      const friends = await res.json()
-      friendRequests.value = friends
-
-      // got this online
-      for (const req of friends) {
-        await getUserById(req.sender_id)
-        await getUserById(req.receiver_id)
-      }
-
-      return friends
+      const requests = await res.json()
+      friendRequests.value = requests
+      return friendRequests.value
     } catch (err) {
       throw err
     }
   }
-  async function removeFriends(userId) {
-    const token = getToken()
 
-    if (!token) {
-      throw new Error('Not authenticated. Please log in first.')
+  async function getFriends() {
+    try {
+      const user = await getUser()
+      friends.value = user.friends || []
+      return friends.value
+    } catch (err) {
+      throw err
     }
+  }
+
+  async function removeFriends(userId) {
     const options = {
       method: 'DELETE',
       headers: {
@@ -236,53 +177,48 @@ export const useUserStore = defineStore('userStore', () => {
         Authorization: `Bearer ${getToken()}`,
       },
     }
+
     try {
       const res = await fetch(`${URL}/friend/${userId}`, options)
-
-      if (!res.ok) {
-        throw new Error('Failed to remove friend')
-      }
+      if (!res.ok) throw new Error('Failed to remove friend')
     } catch (err) {
       throw err
     }
   }
-  function selectFriend(friendId) {
-    friendChat.value = friendId
-  }
 
   function logout() {
     currentUser.value = null
+    friends.value = []
+    friendRequests.value = []
     removeToken()
     localStorage.removeItem('currentUser')
   }
 
-  
-  // got this online
-  function findUserIdByUsername(username) {
-    for (const userId in userMap.value) {
-      if (userMap.value[userId].username === username) {
-        return Number(userId)
-      }
-    }
-    return null
+  function getFriendByUsername(username) {
+    return friends.value.find((f) => f.username === username)
+  }
+
+  function selectFriend(friend) {
+    selectedFriend.value = friend
   }
 
   return {
-    findUserIdByUsername,
-    users,
     currentUser,
-    selectedFriend,
     loggedIn,
-    removeFriends,
+    friends,
+    friendRequests,
     login,
+    createUser,
+    getFriendByUsername,
+    selectedFriend,
+    selectFriend,
     getUser,
+    findUsers,
     sendRequest,
-    userMap,
-    getUserById,
     requestDecision,
     getFriendRequests,
-    createUser,
+    getFriends,
+    removeFriends,
     logout,
-    selectFriend,
   }
 })

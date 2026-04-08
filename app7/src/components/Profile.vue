@@ -22,32 +22,27 @@ onMounted(async () => {
       <div class="profile-info">
         <div class="info-item">
           <strong>Username:</strong>
-          <p>{{ currentUser?.user.username }}</p>
-        </div>
-
-        <div class="info-item">
-          <strong>ID:</strong>
-          <p>{{ currentUser?.user.id }}</p>
+          <p>{{ currentUser?.username }}</p>
         </div>
 
         <div class="info-item">
           <strong>Email:</strong>
-          <p>{{ currentUser?.user.email }}</p>
+          <p>{{ currentUser?.email }}</p>
         </div>
 
         <div class="info-item">
           <strong>First Name:</strong>
-          <p>{{ currentUser?.user.firstName }}</p>
+          <p>{{ currentUser?.firstName }}</p>
         </div>
 
         <div class="info-item">
           <strong>Last Name:</strong>
-          <p>{{ currentUser?.user.lastName }}</p>
+          <p>{{ currentUser?.lastName }}</p>
         </div>
 
         <div class="info-item">
           <strong>Friends:</strong>
-          <p>{{ currentUser?.user.friends?.length || 0 }}</p>
+          <p>{{ currentUser?.friends?.length || 0 }}</p>
         </div>
       </div>
     </div>

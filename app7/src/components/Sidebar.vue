@@ -1,91 +1,101 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
-import { onMounted } from 'vue'
 
 const userStore = useUserStore()
 const router = useRouter()
 
 const search = ref('')
 const error = ref('')
+const loading = ref(false)
 
 const currentUser = computed(() => userStore.currentUser)
+const friendRequests = computed(() => userStore.friendRequests)
+const friends = computed(() => userStore.friends)
 
-const requests = computed(() => userStore.friendRequests || [])
-
-const friends = computed(() => currentUser.value?.friends || [])
-
-const incomingRequests = computed(() =>
-  (requests.value || []).filter(
-    (req) => req.receiver_id === currentUser.value?.id && req.status === 'pending',
-  ),
-)
-
-const outgoingRequests = computed(() =>
-  (requests.value || []).filter(
-    (req) => req.sender_id === currentUser.value?.id && req.status === 'pending',
-  ),
-)
-function getUsername(id) {
-  return userStore.userMap[id]?.username || 'Loading...'
-}
+onMounted(async () => {
+  await userStore.getUser()
+  await userStore.getFriendRequests()
+  await userStore.getFriends()
+})
 
 async function addFriend() {
-  console.log('Current user:', userStore.currentUser)
-  console.log('Current user username:', userStore.currentUser?.username)
   error.value = ''
 
-  if (!search.value.trim()) {
-    error.value = '*Please enter a username'
-    return
-  }
-
-  if (search.value === currentUser.value?.user.username) {
-    error.value = '*You cannot add yourself'
-    return
-  }
-
   try {
-    const targetUserId = userStore.findUserIdByUsername(search.value)
+    loading.value = true
+    const results = await userStore.findUsers(search.value)
+    const user = results.find((u) => u.username === search.value)
 
-    if (!targetUserId) {
+    if (!user) {
       error.value = '*Enter valid username'
       return
     }
 
-    await userStore.sendRequest(targetUserId)
+    if (user._id === currentUser.value._id) {
+      error.value = '*You cannot add yourself'
+      return
+    }
+
+    const alreadyFriends = friends.value.some((f) => f.userId === user._id)
+    if (alreadyFriends) {
+      error.value = '*Already friends'
+      return
+    }
+
+    const alreadySent = currentUser.value.requests?.some(
+      (r) => r.receiver?.userId === user._id || r.receiver === user._id,
+    )
+    console.log('requests:', currentUser.value.requests)
+    console.log('alreadySent:', alreadySent)
+    console.log('user._id:', user._id)
+    if (alreadySent) {
+      error.value = '*Request already sent'
+      return
+    }
+
+    await userStore.sendRequest(user._id)
+    await userStore.getUser()
     search.value = ''
-    await userStore.getFriendRequests()
   } catch (err) {
-    error.value = err.message
+    error.value = `*${err.message}`
+  } finally {
+    loading.value = false
   }
 }
 
 async function acceptRequest(requestId) {
-  await userStore.requestDecision(requestId, true)
-  await userStore.getFriendRequests()
+  try {
+    await userStore.requestDecision(requestId, true)
+    await userStore.getFriendRequests()
+    await userStore.getFriends()
+  } catch (err) {
+    console.error('Accept failed:', err)
+  }
 }
 
 async function declineRequest(requestId) {
-  await userStore.requestDecision(requestId, false)
-  await userStore.getFriendRequests()
-}
-function chat(friendId) {
-  const friend = userStore.users.find((user) => user.id === friendId)
-  if (!friend) return
-
-  router.push(`/home/chat/${friend.username}`)
-}
-
-onMounted(async () => {
   try {
+    await userStore.requestDecision(requestId, false)
     await userStore.getFriendRequests()
   } catch (err) {
-    console.error('Failed to fetch friend requests:', err)
-    error.value = err.message
+    console.error('Decline failed:', err)
   }
-})
+}
+
+async function removeFriend(friendId) {
+  try {
+    await userStore.removeFriends(friendId)
+    await userStore.getFriends()
+  } catch (err) {
+    console.error(err)
+  }
+}
+
+function chat(friend) {
+  router.push(`/home/chat/${friend.username}`)
+}
 </script>
 
 <template>
@@ -102,19 +112,23 @@ onMounted(async () => {
       </span>
 
       <br />
-      <button @click="addFriend">Add friend</button>
+      <button @click="addFriend" :disabled="loading">
+        {{ loading ? 'Sending...' : 'Add friend' }}
+      </button>
     </fieldset>
+
     <div class="friends-list">
       <fieldset>
         <h3>Friends</h3>
 
-        <div v-if="friends.length === 0">No friends yet</div>
+        <div v-if="!friends.length">No friends yet</div>
 
         <div v-else>
-          <div v-for="friendId in friends" :key="friendId">
-            <button @click="chat(friendId)" class="friend">
-              {{ getUsername(friendId) }}
+          <div v-for="friend in friends" :key="friend.userId" class="friend-item">
+            <button @click="chat(friend)" class="friend">
+              {{ friend.username }}
             </button>
+            <button @click="removeFriend(friend.userId)" class="remove-btn">Remove</button>
           </div>
         </div>
       </fieldset>
@@ -124,27 +138,13 @@ onMounted(async () => {
       <fieldset>
         <h3>Friend Requests</h3>
 
-        <div v-if="incomingRequests.length === 0">No friend requests</div>
+        <div v-if="friendRequests.length === 0">No friend requests</div>
 
         <div v-else>
-          <div v-for="req in incomingRequests" :key="req.id">
-            {{ getUsername(req.sender_id) }} :
-            <button @click="acceptRequest(req.id)">Accept</button>
-            <button @click="declineRequest(req.id)">Decline</button>
-          </div>
-        </div>
-      </fieldset>
-    </div>
-
-    <div class="outgoing-requests">
-      <fieldset>
-        <h3>Sent Requests</h3>
-
-        <div v-if="outgoingRequests.length === 0">No outgoing requests</div>
-
-        <div v-else>
-          <div v-for="req in outgoingRequests" :key="req.id">
-            {{ getUsername(req.receiver_id) }} <span>(Pending)</span>
+          <div v-for="request in friendRequests" :key="request._id">
+            {{ request.sender.username }} :
+            <button @click="acceptRequest(request._id)">Accept</button>
+            <button @click="declineRequest(request._id)">Decline</button>
           </div>
         </div>
       </fieldset>
@@ -186,6 +186,11 @@ button {
   margin-bottom: 8px;
 }
 
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .friend:hover {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
@@ -195,13 +200,29 @@ button {
   transform: translateY(0);
 }
 
+.friend-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.remove-btn {
+  background-color: #ffe0e0;
+  width: 70px;
+  height: 30px;
+}
+
+.remove-btn:hover {
+  background-color: red;
+}
+
 fieldset {
   border-radius: 10px;
 }
 
 .friends-list,
 .friend-requests,
-.outgoing-requests,
 .add-friend {
   overflow-y: auto;
   text-align: center;

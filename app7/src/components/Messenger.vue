@@ -16,16 +16,16 @@ const selectedFriend = computed(() => userStore.selectedFriend)
 
 const chatMessages = computed(() => {
   if (!selectedFriend.value) return []
-  return messageStore.messagesWithUsers(selectedFriend.value.id)
+  return messageStore.messagesWithUsers(selectedFriend.value.userId) // ← userId not _id
 })
 
 watch(
   () => route.params.username,
   (username) => {
     if (!username || !userStore.currentUser) return
-    const friend = userStore.users.find((u) => u.username === username)
+    const friend = userStore.getFriendByUsername(username) // ← was userStore.users.find
     if (friend) {
-      userStore.selectFriend(friend.id)
+      userStore.selectFriend(friend)
     }
   },
   { immediate: true },
@@ -50,7 +50,8 @@ onMounted(scrollToBottom)
 
 function handleBubbleClick(msg) {
   if (!currentUser.value) return
-  if (msg.userId === currentUser.value.id) {
+  if (msg.userId === currentUser.value._id) {
+    // ← _id not .id
     msg.redacted ? messageStore.unredact(msg.id) : messageStore.redact(msg.id)
   }
 }
