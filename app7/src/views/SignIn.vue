@@ -44,7 +44,7 @@ onMounted(() => {
         <div>
           <div class="form-item">
             <label class="usernameInput" for="usernameInput">Username</label>
-            <input id="usernameInput" v-model="username" />
+            <input id="usernameInput" v-model="username" placeholder="WICKed" />
           </div>
           <div class="form-item">
             <label class="passwordInput" for="passwordInput">Password</label>
@@ -56,6 +56,7 @@ onMounted(() => {
               :type="showPassword ? 'text' : 'password'"
               id="passwordInput"
               v-model="password"
+              placeholder="●●●●●●●●●●"
               @keyup.enter="login"
             />
           </div>

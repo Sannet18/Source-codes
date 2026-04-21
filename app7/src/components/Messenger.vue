@@ -140,7 +140,7 @@ const isOwner = computed(() => {
   if (!currentGroup.value || !currentUser.value) return false
   return String(currentGroup.value.owner) === String(currentUser.value._id)
 })
-
+const showLeaveModal = ref(false)
 const showMembers = ref(false)
 </script>
 <template>
@@ -157,7 +157,7 @@ const showMembers = ref(false)
           </span>
         </div>
       </div>
-      <button class="leave-btn" @click="leaveGroup(chatId)" :disabled="isOwner">Leave</button>
+      <button class="leave-btn" @click="showLeaveModal = true" :disabled="isOwner">Leave</button>
       <Teleport to="body">
         <div v-if="showInviteModal" class="modal-bg" @click.self="closeInviteModal">
           <div class="modal">
@@ -189,6 +189,29 @@ const showMembers = ref(false)
 
             <div class="modal-actions">
               <button class="cancel-btn" @click="closeInviteModal">Close</button>
+            </div>
+          </div>
+        </div>
+        <div v-if="showLeaveModal" class="modal-bg" @click.self="showLeaveModal = false">
+          <div class="modal">
+            <p class="modal-title">Leave Group</p>
+            <p class="hint">
+              Are you sure you want to leave <strong style="color: white">{{ groupName }}</strong
+              >?
+            </p>
+            <div class="modal-actions">
+              <button class="cancel-btn" @click="showLeaveModal = false">Cancel</button>
+              <button
+                class="confirm-leave-btn"
+                @click="
+                  () => {
+                    showLeaveModal = false
+                    leaveGroup()
+                  }
+                "
+              >
+                Leave
+              </button>
             </div>
           </div>
         </div>
@@ -231,6 +254,25 @@ const showMembers = ref(false)
 </template>
 
 <style scoped>
+.confirm-leave-btn {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 0.5px solid rgba(255, 80, 80, 0.4);
+  background: rgba(255, 80, 80, 0.12);
+  color: rgba(255, 100, 100, 0.9);
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.15s;
+}
+
+.confirm-leave-btn:hover {
+  background: rgba(255, 80, 80, 0.25);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
+}
 .header-center {
   position: relative;
   display: flex;
