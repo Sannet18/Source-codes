@@ -6,7 +6,6 @@ export const useUserStore = defineStore('userStore', () => {
   const currentUser = ref(JSON.parse(localStorage.getItem('currentUser')) || null)
   const friendRequests = ref([])
   const friends = ref([])
-  const selectedFriend = ref(null)
 
   const loggedIn = computed(() => !!currentUser.value)
 
@@ -186,20 +185,32 @@ export const useUserStore = defineStore('userStore', () => {
     }
   }
 
-  function logout() {
-    currentUser.value = null
-    friends.value = []
-    friendRequests.value = []
-    removeToken()
-    localStorage.removeItem('currentUser')
+  async function logout() {
+    const options = {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${getToken()}` },
+    }
+
+    try {
+      const res = await fetch(`${URL}/user/logout`, options)
+
+      if (!res.ok) {
+        throw new Error('Logout failed, Try again')
+      }
+
+      // const data = await res.json()
+    } catch (err) {
+      throw err
+    } finally {
+      // Saw this practice online
+      currentUser.value = null
+      removeToken()
+      localStorage.removeItem('currentUser')
+    }
   }
 
   function getFriendByUsername(username) {
     return friends.value.find((f) => f.username === username)
-  }
-
-  function selectFriend(friend) {
-    selectedFriend.value = friend
   }
 
   return {
@@ -210,8 +221,6 @@ export const useUserStore = defineStore('userStore', () => {
     login,
     createUser,
     getFriendByUsername,
-    selectedFriend,
-    selectFriend,
     getUser,
     findUsers,
     sendRequest,

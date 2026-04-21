@@ -3,6 +3,7 @@ import { computed } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
 import { ref } from 'vue'
+import activeSign from '../assets/active.png'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -18,6 +19,7 @@ const confirmSignOut = () => {
   showConfirm.value = true
 }
 
+// ALso change profile styling
 const signOut = () => {
   userStore.logout()
   router.push('/')
@@ -33,6 +35,7 @@ const cancelSignOut = () => {
   <nav>
     <div class="left">
       <button v-if="userStore.loggedIn" @click="goToProfile" class="opt">
+        <img :src="activeSign" class="icon" />
         {{ currentUser?.username }}
       </button>
     </div>
@@ -49,11 +52,11 @@ const cancelSignOut = () => {
       </template>
 
       <template v-else>
-        <button @click="confirmSignOut" class="opt">Sign Out</button>
+        <button @click="confirmSignOut" class="lpt">Sign Out</button>
       </template>
     </div>
 
-    <div v-if="showConfirm" class="confirm-overlay">
+    <div v-if="showConfirm" class="confirm-overlay" @click.self="cancelSignOut">
       <div class="confirm-box">
         <p>Do you really want to sign out?</p>
         <div class="confirm-buttons">
@@ -66,7 +69,10 @@ const cancelSignOut = () => {
 </template>
 
 <style scoped>
-/* Keep all your existing styles */
+.icon {
+  height: 10px;
+  width: 10px;
+}
 nav {
   background-color: #dcdcdc;
   padding: 10px;
@@ -86,7 +92,7 @@ button {
   width: 100px;
   height: 40px;
   border-radius: 999px;
-  border: none;
+  border: 0.5px solid rgba(255, 255, 255, 0.15);
   cursor: pointer;
   background-color: #222831;
   color: white;
@@ -99,8 +105,16 @@ button {
   transform: translateY(-2px);
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.25);
 }
+.lpt:hover {
+  transform: translateY(-2px);
+  background-color: rgb(255, 0, 0);
+  box-shadow: 0 10px 25px rgba(238, 2, 2, 0.25);
+}
 
 .opt:active {
+  transform: translateY(0);
+}
+.lpt:active {
   transform: translateY(0);
 }
 
