@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessageStore } from '@/stores/messageStore'
 import { useUserStore } from '@/stores/userStore'
@@ -42,7 +42,8 @@ async function createGroup() {
   if (!name) return
 
   try {
-    const newGroup = await messageStore.createGroup(name)
+    await messageStore.createGroup(name)
+    await messageStore.fetchGroups()
     newGroupName.value = ''
     resetModal()
   } catch (err) {
@@ -83,6 +84,12 @@ onMounted(async () => {
   pollInterval = setInterval(async () => {
     await messageStore.fetchGroups()
   }, 3000)
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 </script>
 
