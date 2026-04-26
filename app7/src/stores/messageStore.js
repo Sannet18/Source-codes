@@ -226,20 +226,23 @@ export const useMessageStore = defineStore('messageStore', () => {
         chatIds.map((id) => fetch(`${URL}/chat/${id}`, options).then((r) => r.json())),
       )
 
-      groupMessages.value = results.map((chat) => ({
-        id: chat._id,
-        name: chat.group_name,
-        lastMessage: 'No messages yet',
-        members: chat.users || [],
-        owner: chat.owner?.user_id || null,
-      }))
+      const previous = [...groupMessages.value] 
 
-      console.log(groupMessages.value)
+      groupMessages.value = results.map((chat) => {
+        // keeps the poll thing in effect without overwriting last message
+        const existing = previous.find((g) => g.id === chat._id)
+        return {
+          id: chat._id,
+          name: chat.group_name,
+          lastMessage: existing?.lastMessage || 'No messages yet',
+          members: chat.users || [],
+          owner: chat.owner?.user_id || null,
+        }
+      })
     } catch (err) {
       throw err
     }
   }
-
   return {
     createGroup,
     chatInvite,

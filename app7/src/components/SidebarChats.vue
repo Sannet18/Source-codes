@@ -15,7 +15,7 @@ let pollInterval = null
 const showModal = ref(false)
 const newGroupName = ref('')
 
-const groupChats = messageStore.groupMessages
+const groupChats = computed(() => messageStore.groupMessages)
 
 function openChat(chat) {
   if (!chat?.id) return

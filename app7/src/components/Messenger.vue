@@ -157,6 +157,15 @@ const isOwner = computed(() => {
 })
 const showLeaveModal = ref(false)
 const showMembers = ref(false)
+
+// to show the time a message was sent
+function formatTime(dateStr) {
+  return new Date(dateStr).toLocaleTimeString('en-US', {
+    hour: 'numeric',
+    minute: '2-digit',
+    hour12: true,
+  })
+}
 </script>
 <template>
   <div id="messenger-container" v-if="route.params.id">
@@ -247,6 +256,8 @@ const showMembers = ref(false)
           <div class="text">
             {{ msg.message }}
           </div>
+
+          <div class="time">{{ formatTime(msg.date) }}</div>
         </div>
       </div>
       <div v-if="chatMessages.length === 0" class="no-messages">Start the conversation!</div>
@@ -269,6 +280,12 @@ const showMembers = ref(false)
 </template>
 
 <style scoped>
+.time {
+  font-size: 0.65rem;
+  opacity: 0.5;
+  text-align: right;
+  margin-top: 4px;
+}
 .confirm-leave-btn {
   padding: 7px 14px;
   border-radius: 999px;
@@ -549,6 +566,7 @@ const showMembers = ref(false)
   font-size: 0.75rem;
   font-weight: bold;
   margin-bottom: 4px;
+  text-align: left;
 }
 
 .text {
