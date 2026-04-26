@@ -48,11 +48,11 @@ onMounted(async () => {
   await userStore.getFriendRequests()
   await userStore.getFriends()
 
-  pollInterval = setInterval(
+  pollInterval = setInterval(async ()=> {
     await messageStore.getMessages(route.params.id),
     await userStore.getUser(),
     await userStore.getFriendRequests(),
-    await userStore.getFriends(),
+    await userStore.getFriends()},
     3000,
   )
 

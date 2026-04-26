@@ -21,12 +21,9 @@ onMounted(async () => {
   await userStore.getFriendRequests()
   await userStore.getFriends()
 
-  pollInterval = setInterval(
-    await userStore.getUser(),
-    await userStore.getFriendRequests(),
-    await userStore.getFriends(),
-    3000,
-  )
+  pollInterval = setInterval(async () => {
+    await userStore.getUser(), await userStore.getFriendRequests(), await userStore.getFriends()
+  }, 3000)
 })
 
 const requestSent = ref(false)

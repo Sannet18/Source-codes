@@ -80,7 +80,9 @@ async function handleChatInvite(invite, accept) {
 onMounted(async () => {
   await messageStore.fetchGroups()
 
-  pollInterval = setInterval(await messageStore.fetchGroups(), 3000)
+  pollInterval = setInterval(async () => {
+    await messageStore.fetchGroups()
+  }, 3000)
 })
 </script>
 
