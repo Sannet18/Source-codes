@@ -102,7 +102,7 @@ async function removeFriend(friendId) {
 
 <template>
   <div class="side-bar">
-    <SideBarNav />
+    <SidebarNav />
 
     <div class="scroll-area">
       <section class="add-friend">

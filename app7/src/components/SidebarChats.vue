@@ -3,7 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessageStore } from '@/stores/messageStore'
 import { useUserStore } from '@/stores/userStore'
-import SideBarNav from './SidebarNav.vue'
+import SidebarNav from './SidebarNav.vue'
 import { computed } from 'vue'
 
 const router = useRouter()
@@ -86,7 +86,7 @@ onMounted(async () => {
 
 <template>
   <div class="side-bar">
-    <SideBarNav />
+    <SidebarNav />
 
     <div class="section-header">
       <span class="label">Group chats</span>
