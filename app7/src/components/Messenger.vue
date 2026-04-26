@@ -8,7 +8,7 @@ const messageStore = useMessageStore()
 const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
-const pollInterval = null
+let pollInterval = null
 
 const newMessage = ref('')
 const chatContainer = ref(null)
@@ -48,13 +48,12 @@ onMounted(async () => {
   await userStore.getFriendRequests()
   await userStore.getFriends()
 
-  pollInterval = setInterval(async ()=> {
-    await messageStore.getMessages(route.params.id),
-    await userStore.getUser(),
-    await userStore.getFriendRequests(),
-    await userStore.getFriends()},
-    3000,
-  )
+  pollInterval = setInterval(async () => {
+    ;(await messageStore.getMessages(route.params.id),
+      await userStore.getUser(),
+      await userStore.getFriendRequests(),
+      await userStore.getFriends())
+  }, 3000)
 
   scrollToBottom()
 })

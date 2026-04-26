@@ -6,7 +6,7 @@ import SidebarNav from './SidebarNav.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
-const pollInterval = null
+let pollInterval = null
 
 const search = ref('')
 const error = ref('')

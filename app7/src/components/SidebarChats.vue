@@ -10,7 +10,7 @@ const router = useRouter()
 const route = useRoute()
 const messageStore = useMessageStore()
 const userStore = useUserStore()
-const pollInterval = null
+let pollInterval = null
 
 const showModal = ref(false)
 const newGroupName = ref('')
