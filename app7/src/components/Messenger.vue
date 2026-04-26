@@ -575,6 +575,7 @@ function formatTime(dateStr) {
 .text {
   font-size: 0.9rem;
   line-height: 1.3;
+  text-align: left;
 }
 
 #message-input-container {
