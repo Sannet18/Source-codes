@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, watch, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, nextTick, onMounted, onUnmounted } from 'vue'
 import { useMessageStore } from '@/stores/messageStore'
 import { useUserStore } from '@/stores/userStore'
 import { useRoute, useRouter } from 'vue-router'
@@ -8,6 +8,7 @@ const messageStore = useMessageStore()
 const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
+const pollInterval = null
 
 const newMessage = ref('')
 const chatContainer = ref(null)
@@ -46,7 +47,22 @@ onMounted(async () => {
   await userStore.getUser()
   await userStore.getFriendRequests()
   await userStore.getFriends()
+
+  pollInterval = setInterval(
+    await messageStore.getMessages(route.params.id),
+    await userStore.getUser(),
+    await userStore.getFriendRequests(),
+    await userStore.getFriends(),
+    3000,
+  )
+
   scrollToBottom()
+})
+
+onUnmounted(() => {
+  if (pollInterval) {
+    clearInterval(pollInterval)
+  }
 })
 
 function handleBubbleClick(msg) {

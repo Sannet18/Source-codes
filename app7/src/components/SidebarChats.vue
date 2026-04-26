@@ -10,6 +10,7 @@ const router = useRouter()
 const route = useRoute()
 const messageStore = useMessageStore()
 const userStore = useUserStore()
+const pollInterval = null
 
 const showModal = ref(false)
 const newGroupName = ref('')
@@ -78,6 +79,8 @@ async function handleChatInvite(invite, accept) {
 
 onMounted(async () => {
   await messageStore.fetchGroups()
+
+  pollInterval = setInterval(await messageStore.fetchGroups(), 3000)
 })
 </script>
 

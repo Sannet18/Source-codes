@@ -2,10 +2,11 @@
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import { useRouter } from 'vue-router'
-import SideBarNav from './SideBarNav.vue'
+import SidebarNav from './SidebarNav.vue'
 
 const userStore = useUserStore()
 const router = useRouter()
+const pollInterval = null
 
 const search = ref('')
 const error = ref('')
@@ -19,6 +20,13 @@ onMounted(async () => {
   await userStore.getUser()
   await userStore.getFriendRequests()
   await userStore.getFriends()
+
+  pollInterval = setInterval(
+    await userStore.getUser(),
+    await userStore.getFriendRequests(),
+    await userStore.getFriends(),
+    3000,
+  )
 })
 
 const requestSent = ref(false)
