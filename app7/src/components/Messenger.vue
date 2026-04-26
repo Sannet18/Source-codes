@@ -38,8 +38,9 @@ async function scrollToBottom() {
   }
 }
 watch(chatMessages, scrollToBottom, { deep: true })
-
+const messageInput = ref(null)
 onMounted(async () => {
+  messageInput.value?.focus()
   await messageStore.getMessages(route.params.id)
   console.log('currentUser._id:', currentUser.value?._id)
   console.log('first msg userId:', messageStore.messages[0]?.userId)
@@ -265,10 +266,12 @@ function formatTime(dateStr) {
 
     <div id="message-input-container">
       <input
+        ref="messageInput"
         v-model="newMessage"
         type="text"
         placeholder="Type your message..."
         @keyup.enter="sendMessage"
+        autofocus
       />
       <button @click="sendMessage">Send</button>
     </div>
